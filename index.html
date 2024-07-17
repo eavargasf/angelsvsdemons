@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Angels vs Demons: Battle in Paris</title>
+    <title>Angels vs Demons: Paris Defender</title>
     <style>
         body {
             margin: 0;
@@ -20,8 +20,9 @@
             height: 600px;
             position: relative;
             overflow: hidden;
-            background-image: url('images/parisonfire.jpeg?text=Paris+Background');
+            background-image: url('https://via.placeholder.com/800x600.png?text=Paris+Background');
             background-size: cover;
+            cursor: crosshair;
         }
         .character {
             position: absolute;
@@ -29,13 +30,20 @@
             height: 50px;
             background-size: contain;
             background-repeat: no-repeat;
-            transition: all 0.3s ease;
         }
-        .angel {
-            background-image: url('images/angel.jpeg?text=Angel');
+        #player {
+            background-image: url('https://via.placeholder.com/50x50.png?text=Angel');
+            z-index: 10;
         }
         .demon {
-            background-image: url('images/demon.jpeg?text=Demon');
+            background-image: url('https://via.placeholder.com/50x50.png?text=Demon');
+        }
+        .bullet {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: yellow;
+            border-radius: 50%;
         }
         #scoreboard {
             position: absolute;
@@ -50,91 +58,118 @@
 <body>
     <div id="game-container">
         <div id="scoreboard">
-            Angels: <span id="angel-score">0</span> | Demons: <span id="demon-score">0</span>
+            Score: <span id="score">0</span> | Lives: <span id="lives">3</span>
         </div>
+        <div id="player" class="character"></div>
     </div>
 
     <script>
         const gameContainer = document.getElementById('game-container');
-        const angelScore = document.getElementById('angel-score');
-        const demonScore = document.getElementById('demon-score');
+        const player = document.getElementById('player');
+        const scoreElement = document.getElementById('score');
+        const livesElement = document.getElementById('lives');
 
-        let angels = [];
+        let score = 0;
+        let lives = 3;
         let demons = [];
-        let angelPoints = 0;
-        let demonPoints = 0;
+        let bullets = [];
 
-        function createCharacter(type) {
-            const character = document.createElement('div');
-            character.className = `character ${type}`;
-            character.style.left = `${Math.random() * (gameContainer.clientWidth - 50)}px`;
-            character.style.top = `${Math.random() * (gameContainer.clientHeight - 50)}px`;
-            gameContainer.appendChild(character);
-            return character;
+        function updateScoreboard() {
+            scoreElement.textContent = score;
+            livesElement.textContent = lives;
         }
 
-        function moveCharacter(character) {
-            const x = parseFloat(character.style.left) + (Math.random() - 0.5) * 10;
-            const y = parseFloat(character.style.top) + (Math.random() - 0.5) * 10;
-            character.style.left = `${Math.max(0, Math.min(gameContainer.clientWidth - 50, x))}px`;
-            character.style.top = `${Math.max(0, Math.min(gameContainer.clientHeight - 50, y))}px`;
+        function createDemon() {
+            const demon = document.createElement('div');
+            demon.className = 'character demon';
+            demon.style.left = `${Math.random() * (gameContainer.clientWidth - 50)}px`;
+            demon.style.top = '0px';
+            gameContainer.appendChild(demon);
+            demons.push(demon);
         }
 
-        function checkCollision(char1, char2) {
-            const rect1 = char1.getBoundingClientRect();
-            const rect2 = char2.getBoundingClientRect();
+        function moveDemon(demon) {
+            const y = parseFloat(demon.style.top) + 2;
+            demon.style.top = `${y}px`;
+
+            if (y > gameContainer.clientHeight) {
+                gameContainer.removeChild(demon);
+                demons = demons.filter(d => d !== demon);
+                lives--;
+                updateScoreboard();
+                if (lives <= 0) {
+                    alert('Game Over! Your score: ' + score);
+                    location.reload();
+                }
+            }
+        }
+
+        function createBullet(x, y) {
+            const bullet = document.createElement('div');
+            bullet.className = 'bullet';
+            bullet.style.left = `${x}px`;
+            bullet.style.top = `${y}px`;
+            gameContainer.appendChild(bullet);
+            bullets.push(bullet);
+        }
+
+        function moveBullet(bullet) {
+            const y = parseFloat(bullet.style.top) - 5;
+            bullet.style.top = `${y}px`;
+
+            if (y < 0) {
+                gameContainer.removeChild(bullet);
+                bullets = bullets.filter(b => b !== bullet);
+            }
+        }
+
+        function checkCollisions() {
+            bullets.forEach(bullet => {
+                demons.forEach(demon => {
+                    if (isColliding(bullet, demon)) {
+                        gameContainer.removeChild(bullet);
+                        gameContainer.removeChild(demon);
+                        bullets = bullets.filter(b => b !== bullet);
+                        demons = demons.filter(d => d !== demon);
+                        score++;
+                        updateScoreboard();
+                    }
+                });
+            });
+        }
+
+        function isColliding(element1, element2) {
+            const rect1 = element1.getBoundingClientRect();
+            const rect2 = element2.getBoundingClientRect();
             return !(rect1.right < rect2.left || 
                      rect1.left > rect2.right || 
                      rect1.bottom < rect2.top || 
                      rect1.top > rect2.bottom);
         }
 
-        function updateGame() {
-            angels.forEach(angel => moveCharacter(angel));
-            demons.forEach(demon => moveCharacter(demon));
-
-            angels.forEach(angel => {
-                demons.forEach(demon => {
-                    if (checkCollision(angel, demon)) {
-                        gameContainer.removeChild(demon);
-                        demons = demons.filter(d => d !== demon);
-                        angelPoints++;
-                        angelScore.textContent = angelPoints;
-                    }
-                });
-            });
-
-            demons.forEach(demon => {
-                angels.forEach(angel => {
-                    if (checkCollision(demon, angel)) {
-                        gameContainer.removeChild(angel);
-                        angels = angels.filter(a => a !== angel);
-                        demonPoints++;
-                        demonScore.textContent = demonPoints;
-                    }
-                });
-            });
-
-            if (Math.random() < 0.02) {
-                const newAngel = createCharacter('angel');
-                angels.push(newAngel);
-            }
-
-            if (Math.random() < 0.02) {
-                const newDemon = createCharacter('demon');
-                demons.push(newDemon);
-            }
-
-            requestAnimationFrame(updateGame);
+        function gameLoop() {
+            if (Math.random() < 0.02) createDemon();
+            demons.forEach(moveDemon);
+            bullets.forEach(moveBullet);
+            checkCollisions();
+            requestAnimationFrame(gameLoop);
         }
 
-        // Initialize game
-        for (let i = 0; i < 5; i++) {
-            angels.push(createCharacter('angel'));
-            demons.push(createCharacter('demon'));
-        }
+        gameContainer.addEventListener('mousemove', (e) => {
+            const rect = gameContainer.getBoundingClientRect();
+            const x = e.clientX - rect.left - 25;
+            player.style.left = `${Math.max(0, Math.min(gameContainer.clientWidth - 50, x))}px`;
+        });
 
-        updateGame();
+        gameContainer.addEventListener('click', (e) => {
+            const rect = gameContainer.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = player.getBoundingClientRect().top - rect.top;
+            createBullet(x, y);
+        });
+
+        updateScoreboard();
+        gameLoop();
     </script>
 </body>
 </html>
