@@ -3,14 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Angels vs Demons in Paris</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Angels vs Demons: Battle in Paris</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #87CEEB;
+            font-family: Arial, sans-serif;
+        }
+        #game-container {
+            width: 800px;
+            height: 600px;
+            position: relative;
+            overflow: hidden;
+            background-image: url('https://via.placeholder.com/800x600.png?text=Paris+Background');
+            background-size: cover;
+        }
+        .character {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            transition: all 0.3s ease;
+        }
+        .angel {
+            background-image: url('https://via.placeholder.com/50x50.png?text=Angel');
+        }
+        .demon {
+            background-image: url('https://via.placeholder.com/50x50.png?text=Demon');
+        }
+        #scoreboard {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="600" height="400"></canvas>
-    <div id="info">
-        <p>Health: 100</p>
+    <div id="game-container">
+        <div id="scoreboard">
+            Angels: <span id="angel-score">0</span> | Demons: <span id="demon-score">0</span>
+        </div>
     </div>
-    <script src="script.js"></script>
+
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const angelScore = document.getElementById('angel-score');
+        const demonScore = document.getElementById('demon-score');
+
+        let angels = [];
+        let demons = [];
+        let angelPoints = 0;
+        let demonPoints = 0;
+
+        function createCharacter(type) {
+            const character = document.createElement('div');
+            character.className = `character ${type}`;
+            character.style.left = `${Math.random() * (gameContainer.clientWidth - 50)}px`;
+            character.style.top = `${Math.random() * (gameContainer.clientHeight - 50)}px`;
+            gameContainer.appendChild(character);
+            return character;
+        }
+
+        function moveCharacter(character) {
+            const x = parseFloat(character.style.left) + (Math.random() - 0.5) * 10;
+            const y = parseFloat(character.style.top) + (Math.random() - 0.5) * 10;
+            character.style.left = `${Math.max(0, Math.min(gameContainer.clientWidth - 50, x))}px`;
+            character.style.top = `${Math.max(0, Math.min(gameContainer.clientHeight - 50, y))}px`;
+        }
+
+        function checkCollision(char1, char2) {
+            const rect1 = char1.getBoundingClientRect();
+            const rect2 = char2.getBoundingClientRect();
+            return !(rect1.right < rect2.left || 
+                     rect1.left > rect2.right || 
+                     rect1.bottom < rect2.top || 
+                     rect1.top > rect2.bottom);
+        }
+
+        function updateGame() {
+            angels.forEach(angel => moveCharacter(angel));
+            demons.forEach(demon => moveCharacter(demon));
+
+            angels.forEach(angel => {
+                demons.forEach(demon => {
+                    if (checkCollision(angel, demon)) {
+                        gameContainer.removeChild(demon);
+                        demons = demons.filter(d => d !== demon);
+                        angelPoints++;
+                        angelScore.textContent = angelPoints;
+                    }
+                });
+            });
+
+            demons.forEach(demon => {
+                angels.forEach(angel => {
+                    if (checkCollision(demon, angel)) {
+                        gameContainer.removeChild(angel);
+                        angels = angels.filter(a => a !== angel);
+                        demonPoints++;
+                        demonScore.textContent = demonPoints;
+                    }
+                });
+            });
+
+            if (Math.random() < 0.02) {
+                const newAngel = createCharacter('angel');
+                angels.push(newAngel);
+            }
+
+            if (Math.random() < 0.02) {
+                const newDemon = createCharacter('demon');
+                demons.push(newDemon);
+            }
+
+            requestAnimationFrame(updateGame);
+        }
+
+        // Initialize game
+        for (let i = 0; i < 5; i++) {
+            angels.push(createCharacter('angel'));
+            demons.push(createCharacter('demon'));
+        }
+
+        updateGame();
+    </script>
 </body>
 </html>
