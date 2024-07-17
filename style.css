@@ -1,0 +1,24 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+#gameCanvas {
+    border: 1px solid black;
+}
+
+.isometric {
+    /* Isometric positioning styles */
+    transform: rotateZ(45deg);
+}
+
+.layer1 {
+    /* Adjust Z-index and transparency for pseudo-3D effect */
+    z-index: 2;
+    opacity: 0.8;
+}
+
+.layer2 {
+    z-index: 1;
+    opacity: 1;
+}
